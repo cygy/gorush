@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	fcm "github.com/NaySoftware/go-fcm"
 	"github.com/google/go-gcm"
 	apns "github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/certificate"
@@ -524,38 +525,81 @@ func PushToAndroid(req PushNotification) bool {
 
 Retry:
 	var isError = false
-	notification := GetAndroidNotification(req)
+	var newTokens []string
 
 	if APIKey = PushConf.Android.APIKey; req.APIKey != "" {
 		APIKey = req.APIKey
 	}
 
-	res, err := gcm.SendHttp(APIKey, notification)
+	var statsSuccess int64
+	var statsFailure int64
 
-	if err != nil {
-		// GCM server error
-		LogError.Error("GCM server error: " + err.Error())
-		return false
-	}
+	if PushConf.Android.Legacy {
+		notification := GetAndroidNotification(req)
+		res, err := gcm.SendHttp(APIKey, notification)
 
-	LogAccess.Debug(fmt.Sprintf("Android Success count: %d, Failure count: %d", res.Success, res.Failure))
-	StatStorage.AddAndroidSuccess(int64(res.Success))
-	StatStorage.AddAndroidError(int64(res.Failure))
-
-	var newTokens []string
-	for k, result := range res.Results {
-		if result.Error != "" {
-			isError = true
-			newTokens = append(newTokens, req.Tokens[k])
-			LogPush(FailedPush, req.Tokens[k], req, errors.New(result.Error))
-			if PushConf.Core.Sync {
-				req.AddLog(getLogPushEntry(FailedPush, req.Tokens[k], req, errors.New(result.Error)))
-			}
-			continue
+		if err != nil {
+			// GCM server error
+			LogError.Error("GCM server error: " + err.Error())
+			return false
 		}
 
-		LogPush(SucceededPush, req.Tokens[k], req, nil)
+		statsSuccess = int64(res.Success)
+		statsFailure = int64(res.Failure)
+
+		for k, result := range res.Results {
+			token := req.Tokens[k]
+
+			if result.Error != "" {
+				isError = true
+				newTokens = append(newTokens, token)
+				LogPush(FailedPush, token, req, errors.New(result.Error))
+				if PushConf.Core.Sync {
+					req.AddLog(getLogPushEntry(FailedPush, token, req, errors.New(result.Error)))
+				}
+				continue
+			}
+
+			LogPush(SucceededPush, token, req, nil)
+		}
+	} else {
+		notification := GetAndroidNotification(req)
+		fcm := fcm.NewFcmClient(APIKey)
+		fcm.NewFcmRegIdsMsg(req.Tokens, notification)
+
+		res, err := fcm.Send()
+
+		if err != nil {
+			// FCM server error
+			LogError.Error("FCM server error: " + err.Error())
+			return false
+		}
+
+		statsSuccess = int64(res.Success)
+		statsFailure = int64(res.Fail)
+
+		for k, result := range res.Results {
+			for key, value := range result {
+				token := req.Tokens[k]
+
+				if key == "error" {
+					isError = true
+					newTokens = append(newTokens, token)
+					LogPush(FailedPush, token, req, errors.New(value))
+					if PushConf.Core.Sync {
+						req.AddLog(getLogPushEntry(FailedPush, token, req, errors.New(value)))
+					}
+					continue
+				}
+
+				LogPush(SucceededPush, token, req, nil)
+			}
+		}
 	}
+
+	LogAccess.Debug(fmt.Sprintf("Android Success count: %d, Failure count: %d", statsSuccess, statsFailure))
+	StatStorage.AddAndroidSuccess(statsSuccess)
+	StatStorage.AddAndroidError(statsFailure)
 
 	if isError == true && retryCount < maxRetry {
 		retryCount++

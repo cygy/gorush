@@ -30,6 +30,7 @@ android:
   enabled: true
   apikey: "YOUR_API_KEY"
   max_retry: 0 # resend fail notification, default value zero is disabled
+  legacy: false # use GCM (true) or FCM (false)
 
 ios:
   enabled: false

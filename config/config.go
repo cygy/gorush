@@ -55,6 +55,7 @@ type SectionAndroid struct {
 	Enabled  bool   `yaml:"enabled"`
 	APIKey   string `yaml:"apikey"`
 	MaxRetry int    `yaml:"max_retry"`
+	Legacy   bool   `yaml:"legacy"`
 }
 
 // SectionIos is sub section of config.
@@ -149,6 +150,7 @@ func BuildDefaultPushConf() ConfYaml {
 	conf.Android.Enabled = false
 	conf.Android.APIKey = ""
 	conf.Android.MaxRetry = 0
+	conf.Android.Legacy = true
 
 	// iOS
 	conf.Ios.Enabled = false

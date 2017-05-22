@@ -85,6 +85,7 @@ func (suite *ConfigTestSuite) TestValidateConfDefault() {
 	assert.Equal(suite.T(), false, suite.ConfGorushDefault.Android.Enabled)
 	assert.Equal(suite.T(), "", suite.ConfGorushDefault.Android.APIKey)
 	assert.Equal(suite.T(), 0, suite.ConfGorushDefault.Android.MaxRetry)
+	assert.Equal(suite.T(), true, suite.ConfGorushDefault.Android.Legacy)
 
 	// iOS
 	assert.Equal(suite.T(), false, suite.ConfGorushDefault.Ios.Enabled)
@@ -145,6 +146,7 @@ func (suite *ConfigTestSuite) TestValidateConf() {
 	assert.Equal(suite.T(), true, suite.ConfGorush.Android.Enabled)
 	assert.Equal(suite.T(), "YOUR_API_KEY", suite.ConfGorush.Android.APIKey)
 	assert.Equal(suite.T(), 0, suite.ConfGorush.Android.MaxRetry)
+	assert.Equal(suite.T(), false, suite.ConfGorush.Android.Legacy)
 
 	// iOS
 	assert.Equal(suite.T(), false, suite.ConfGorush.Ios.Enabled)

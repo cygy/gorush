@@ -52,6 +52,7 @@ iOS Options:
 Android Options:
     -k, --apikey <api_key>           Android API Key
     --android                        enabled android (default: false)
+    --android-legacy                 use GCM (default: true)
 Common Options:
     -h, --help                       Show this message
     -v, --version                    Show version
@@ -120,6 +121,7 @@ func main() {
 	flag.StringVar(&message, "message", "", "notification message")
 	flag.StringVar(&title, "title", "", "notification title")
 	flag.BoolVar(&opts.Android.Enabled, "android", false, "send android notification")
+	flag.BoolVar(&opts.Android.Legacy, "android-legacy", true, "use GCM to send android notification")
 	flag.BoolVar(&opts.Ios.Enabled, "ios", false, "send ios notification")
 	flag.BoolVar(&opts.Ios.Production, "production", false, "production mode in iOS")
 	flag.StringVar(&topic, "topic", "", "apns topic in iOS")
@@ -197,6 +199,7 @@ func main() {
 	// send android notification
 	if opts.Android.Enabled {
 		gorush.PushConf.Android.Enabled = opts.Android.Enabled
+		gorush.PushConf.Android.Legacy = opts.Android.Legacy
 		req := gorush.PushNotification{
 			Tokens:   []string{token},
 			Platform: gorush.PlatFormAndroid,
